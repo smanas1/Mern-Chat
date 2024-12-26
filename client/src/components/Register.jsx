@@ -1,11 +1,23 @@
-import { useState } from "react";
+import axios from "axios";
+import { useContext, useState } from "react";
+import { UserContext } from "./UserContext";
 
 const Register = () => {
   const [username, setUsername] = useState("");
   const [password, serPassword] = useState("");
+  const { setUsername: setLoggedInUsername, setId } = useContext(UserContext);
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log(username, password);
+    axios
+      .post("/register", { username, password })
+      .then((res) => {
+        setLoggedInUsername(username);
+        setId(res.data._id);
+        console.log(res.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
   };
   return (
     <div className="h-screen bg-blue-50 flex  items-center">
@@ -20,7 +32,7 @@ const Register = () => {
           type="text"
           name="username"
           placeholder="Username"
-          className="border block mb-3 w-full rounded-sm p-2 outline-blue-500 "
+          className="border block mb-3 w-full rounded p-2 outline-blue-500 "
         />
         <input
           value={password}
@@ -28,7 +40,7 @@ const Register = () => {
           type="password"
           name="password"
           placeholder="Password"
-          className="border block mb-3 w-full rounded-sm p-2  outline-blue-500"
+          className="border block mb-3 w-full rounded p-2  outline-blue-500"
         />
         <button
           type="submit"

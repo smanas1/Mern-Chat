@@ -1,12 +1,14 @@
-import { useState } from "react";
-import "./App.css";
-import Register from "./components/Register";
+import axios from "axios";
+import { UserContextProvider } from "./components/UserContext";
+import Routes from "./components/Routes";
 
 function App() {
+  axios.defaults.baseURL = "http://localhost:8000";
+  axios.defaults.withCredentials = true;
   return (
-    <>
-      <Register />
-    </>
+    <UserContextProvider>
+      <Routes />
+    </UserContextProvider>
   );
 }
 
