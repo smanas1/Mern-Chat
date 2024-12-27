@@ -34,6 +34,30 @@ app.get("/profile", (req, res) => {
   }
 });
 
+app.post("/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const user = await userModel.findOne({ username });
+    if (!user) return res.status(401).json("User not found");
+    if (user.password !== password)
+      return res.status(401).json("Wrong Password");
+    jwt.sign(
+      { userId: user._id, username },
+      process.env.JWT_SECRET,
+      {},
+      function (err, token) {
+        if (err) throw err.message;
+        res
+          .cookie("token", token, { sameSite: "none", secure: true })
+          .status(201)
+          .json("Login Successful");
+      }
+    );
+  } catch (error) {
+    console.log(error.message);
+  }
+});
+
 app.post("/register", async (req, res) => {
   try {
     const { username, password } = req.body;

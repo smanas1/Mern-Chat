@@ -1,26 +1,39 @@
 import axios from "axios";
 import { useContext, useState } from "react";
 import { UserContext } from "./UserContext";
+import { toast, ToastContainer } from "react-toastify";
 
-const Register = () => {
+const LoginAndRegister = () => {
   const [username, setUsername] = useState("");
   const [password, serPassword] = useState("");
+  const [isLogin, setIsLogin] = useState(false);
   const { setUsername: setLoggedInUsername, setId } = useContext(UserContext);
   const handleSubmit = (e) => {
     e.preventDefault();
+    const url = isLogin ? "/login" : "/register";
     axios
-      .post("/register", { username, password })
+      .post(url, { username, password })
       .then((res) => {
         setLoggedInUsername(username);
         setId(res.data._id);
         console.log(res.data);
       })
       .catch((err) => {
-        console.log(err);
+        toast.error(err.response.data, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "colored",
+        });
       });
   };
   return (
     <div className="h-screen bg-blue-50 flex  items-center">
+      <ToastContainer theme="colored" />
       <form
         action="submit"
         onSubmit={handleSubmit}
@@ -46,11 +59,22 @@ const Register = () => {
           type="submit"
           className="bg-blue-500 p-2 rounded text-white w-full"
         >
-          Register
+          {isLogin ? "Login" : "Register"}
         </button>
+        <div className="text-center mt-3">
+          <p>
+            Click here to{" "}
+            <span
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-blue-400 cursor-pointer underline font-semibold"
+            >
+              {isLogin ? "Register" : "Login"}
+            </span>
+          </p>
+        </div>
       </form>
     </div>
   );
 };
 
-export default Register;
+export default LoginAndRegister;

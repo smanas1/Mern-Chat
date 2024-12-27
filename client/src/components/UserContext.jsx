@@ -10,7 +10,9 @@ export function UserContextProvider({ children }) {
     axios
       .get("/profile")
       .then((res) => {
-        console.log(res.data);
+        setUsername(res.data.username);
+        setId(res.data.id);
+        console.log(res);
       })
       .catch((err) => {
         console.log(err);
