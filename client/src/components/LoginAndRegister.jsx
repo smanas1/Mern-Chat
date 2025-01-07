@@ -19,16 +19,7 @@ const LoginAndRegister = () => {
         console.log(res.data);
       })
       .catch((err) => {
-        toast.error(err.response.data, {
-          position: "top-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: false,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "colored",
-        });
+        toast.error(err.response.data);
       });
   };
   return (
@@ -37,6 +28,7 @@ const LoginAndRegister = () => {
       <form
         action="submit"
         onSubmit={handleSubmit}
+        x
         className="w-64 mx-auto mb-16"
       >
         <input

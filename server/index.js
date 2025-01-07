@@ -4,6 +4,7 @@ const userModel = require("./models/userModel");
 const cookieParser = require("cookie-parser");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
+const ws = require("ws");
 const cors = require("cors");
 
 // Middlewares
@@ -61,6 +62,8 @@ app.post("/login", async (req, res) => {
 app.post("/register", async (req, res) => {
   try {
     const { username, password } = req.body;
+    const existingUser = await userModel.findOne({ username });
+    if (existingUser) return res.status(401).json("User Already Exists");
     createdUser = await userModel.create({ username, password });
     jwt.sign(
       { userId: createdUser._id, username },
@@ -79,10 +82,6 @@ app.post("/register", async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT, () => {
-  console.log(`Server is running on port ${process.env.PORT}`);
-});
-
 // DB Connection
 mongoose
   .connect(process.env.MONGO_URL)
@@ -92,3 +91,31 @@ mongoose
   .catch((err) => {
     console.log(err.message);
   });
+
+// Websocket
+const server = app.listen(process.env.PORT);
+
+const wss = new ws.WebSocketServer({ server });
+
+wss.on("connection", (connection, req) => {
+  const cookie = req.headers.cookie;
+
+  const token = cookie.split("=")[1];
+
+  jwt.verify(token, process.env.JWT_SECRET, function (err, userData) {
+    const { userId, username } = userData;
+    connection.userId = userId;
+    connection.username = username;
+  });
+
+  [...wss.clients].forEach((client) => {
+    client.send(
+      JSON.stringify({
+        online: [...wss.clients].map((client) => ({
+          userId: client.userId,
+          username: client.username,
+        })),
+      })
+    );
+  });
+});
