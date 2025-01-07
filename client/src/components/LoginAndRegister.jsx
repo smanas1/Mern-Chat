@@ -6,7 +6,7 @@ import { toast, ToastContainer } from "react-toastify";
 const LoginAndRegister = () => {
   const [username, setUsername] = useState("");
   const [password, serPassword] = useState("");
-  const [isLogin, setIsLogin] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
   const { setUsername: setLoggedInUsername, setId } = useContext(UserContext);
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -28,7 +28,7 @@ const LoginAndRegister = () => {
       <form
         action="submit"
         onSubmit={handleSubmit}
-        x
+        x="true"
         className="w-64 mx-auto mb-16"
       >
         <input
