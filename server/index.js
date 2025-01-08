@@ -6,6 +6,7 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const ws = require("ws");
 const cors = require("cors");
+const MessageModel = require("./models/MessageModel");
 
 // Middlewares
 const app = express();
@@ -119,7 +120,27 @@ wss.on("connection", (connection, req) => {
     );
   });
 
-  connection.on("message", (message) => {
-    console.log(message);
+  connection.on("message", async (message) => {
+    const messageData = JSON.parse(message.toString());
+    const { to, text } = messageData.message;
+
+    if (to && text) {
+      const messageDoc = await MessageModel.create({
+        sender: connection.userId,
+        to,
+        text,
+      });
+      [...wss.clients]
+        .filter((c) => c.userId === to)
+        .forEach((client) =>
+          client.send(
+            JSON.stringify({
+              text,
+              sender: connection.userId,
+              id: messageDoc._id,
+            })
+          )
+        );
+    }
   });
 });

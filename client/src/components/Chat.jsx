@@ -7,6 +7,7 @@ const Chat = () => {
   const [selecetedUser, setSelectedUser] = useState(null);
   const [newMessageText, setNewMessageText] = useState("");
   const [onlinePeoples, setOnlinePeoples] = useState([]);
+  const [messages, setMessages] = useState([]);
   const { username, id } = useContext(UserContext);
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8000");
@@ -21,9 +22,11 @@ const Chat = () => {
     setOnlinePeoples(people);
   };
   function handleMessage(event) {
-    const userOnline = JSON.parse(event.data);
-    if ("online" in userOnline) {
-      showOnlinePeople(userOnline.online);
+    const messageData = JSON.parse(event.data);
+    if ("online" in messageData) {
+      showOnlinePeople(messageData.online);
+    } else if ("text" in messageData) {
+      setMessages((prev) => [...prev, { ...messageData }]);
     }
   }
   const onlinePeopleExcelOurUser = { ...onlinePeoples };
@@ -38,7 +41,10 @@ const Chat = () => {
         },
       })
     );
-    console.log(username);
+    setMessages((prev) => [
+      ...prev,
+      { text: newMessageText, sender: id, to: selecetedUser },
+    ]);
     setNewMessageText("");
   };
   return (
@@ -96,6 +102,14 @@ const Chat = () => {
               </h1>
             </div>
           )}
+          {selecetedUser &&
+            messages.map((message, i) => (
+              <div key={i}>
+                <p>sender: {message.sender}</p>
+                <p>myid: {id}</p>
+                {message.text}
+              </div>
+            ))}
         </div>
         {selecetedUser && (
           <form className=" flex " onSubmit={messageSubmit}>
