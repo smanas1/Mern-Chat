@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import Avatar from "./Avatar";
+import { UserContext } from "./UserContext";
 
 const Chat = () => {
   const [ws, setWs] = useState(null);
   const [selecetedUser, setSelectedUser] = useState(null);
+  const [newMessageText, setNewMessageText] = useState("");
   const [onlinePeoples, setOnlinePeoples] = useState([]);
+  const { username, id } = useContext(UserContext);
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8000");
     setWs(ws);
@@ -22,8 +25,22 @@ const Chat = () => {
     if ("online" in userOnline) {
       showOnlinePeople(userOnline.online);
     }
-    console.log("new message");
   }
+  const onlinePeopleExcelOurUser = { ...onlinePeoples };
+  delete onlinePeopleExcelOurUser[id];
+  const messageSubmit = (e) => {
+    e.preventDefault();
+    ws.send(
+      JSON.stringify({
+        message: {
+          to: selecetedUser,
+          text: newMessageText,
+        },
+      })
+    );
+    console.log(username);
+    setNewMessageText("");
+  };
   return (
     <div className="h-screen flex ">
       <div className="w-72 bg-[#F7FBFC]">
@@ -40,7 +57,7 @@ const Chat = () => {
           </svg>
           <h1 className="text-xl font-semibold ml-2 text-blue-500">YOR SA</h1>
         </div>
-        {Object.keys(onlinePeoples).map((username, i) => (
+        {Object.keys(onlinePeopleExcelOurUser).map((username, i) => (
           <div
             key={i}
             className={`border-t flex  items-center last:border-b capitalize px-5 relative py-2 ${
@@ -81,13 +98,18 @@ const Chat = () => {
           )}
         </div>
         {selecetedUser && (
-          <div className=" flex ">
+          <form className=" flex " onSubmit={messageSubmit}>
             <input
+              value={newMessageText}
+              onChange={(e) => setNewMessageText(e.target.value)}
               type="text"
               placeholder="Type Your Message Here"
               className="border w-full p-2 rounded-md outline-none"
             />
-            <div className="bg-blue-500 cursor-pointer text-white p-2 rounded-md ml-2">
+            <button
+              type="submit"
+              className="bg-blue-500 cursor-pointer text-white p-2 rounded-md ml-2"
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -102,8 +124,8 @@ const Chat = () => {
                   d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5"
                 />
               </svg>
-            </div>
-          </div>
+            </button>
+          </form>
         )}
       </div>
     </div>

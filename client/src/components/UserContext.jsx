@@ -11,7 +11,7 @@ export function UserContextProvider({ children }) {
       .get("/profile")
       .then((res) => {
         setUsername(res.data.username);
-        setId(res.data.id);
+        setId(res.data.userId);
         console.log(res);
       })
       .catch((err) => {

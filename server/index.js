@@ -118,4 +118,8 @@ wss.on("connection", (connection, req) => {
       })
     );
   });
+
+  connection.on("message", (message) => {
+    console.log(message);
+  });
 });
