@@ -1,7 +1,9 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import Avatar from "./Avatar";
 import { UserContext } from "./UserContext";
-
+import ScrollToBottom from "react-scroll-to-bottom";
+import { uniqBy } from "lodash";
+import axios from "axios";
 const Chat = () => {
   const [ws, setWs] = useState(null);
   const [selecetedUser, setSelectedUser] = useState(null);
@@ -9,6 +11,7 @@ const Chat = () => {
   const [onlinePeoples, setOnlinePeoples] = useState([]);
   const [messages, setMessages] = useState([]);
   const { username, id } = useContext(UserContext);
+  const messageBoxRef = useRef(null);
   useEffect(() => {
     const ws = new WebSocket("ws://localhost:8000");
     setWs(ws);
@@ -31,8 +34,10 @@ const Chat = () => {
   }
   const onlinePeopleExcelOurUser = { ...onlinePeoples };
   delete onlinePeopleExcelOurUser[id];
+
   const messageSubmit = (e) => {
     e.preventDefault();
+    if (!newMessageText) return;
     ws.send(
       JSON.stringify({
         message: {
@@ -43,10 +48,26 @@ const Chat = () => {
     );
     setMessages((prev) => [
       ...prev,
-      { text: newMessageText, sender: id, to: selecetedUser },
+      { text: newMessageText, sender: id, to: selecetedUser, _id: Date.now() },
     ]);
     setNewMessageText("");
   };
+  const messagesWithoutDup = uniqBy(messages, "_id");
+  useEffect(() => {
+    if (messageBoxRef.current) {
+      messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
+    }
+  }, [messages]);
+  useEffect(() => {
+    if (selecetedUser) {
+      axios
+        .get(`http://localhost:8000/messages/${selecetedUser}/${id}`)
+        .then((res) => {
+          setMessages(res.data);
+        });
+    }
+  }, [selecetedUser]);
+
   return (
     <div className="h-screen flex ">
       <div className="w-72 bg-[#F7FBFC]">
@@ -80,7 +101,7 @@ const Chat = () => {
         ))}
       </div>
       <div className="flex flex-col w-full bg-blue-50 p-3">
-        <div className="flex-1 overflow-auto">
+        <div ref={messageBoxRef} className="flex-1 scroll-smooth overflow-auto">
           {!selecetedUser && (
             <div className="flex justify-center items-center h-full">
               <h1 className="text-xl flex items-center text-gray-400">
@@ -103,11 +124,21 @@ const Chat = () => {
             </div>
           )}
           {selecetedUser &&
-            messages.map((message, i) => (
-              <div key={i}>
-                <p>sender: {message.sender}</p>
-                <p>myid: {id}</p>
-                {message.text}
+            messagesWithoutDup.map((message, i) => (
+              <div
+                key={i}
+                className={message.sender === id ? "text-right " : "text-left"}
+              >
+                <div
+                  className={
+                    "p-2 m-1 break-words inline-block h-auto max-w-72" +
+                    (message.sender === id
+                      ? " bg-blue-500  text-white rounded-md  "
+                      : " bg-gray-200 text-gray-900  rounded-md ")
+                  }
+                >
+                  {message.text}
+                </div>
               </div>
             ))}
         </div>

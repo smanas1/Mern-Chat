@@ -23,7 +23,14 @@ app.use(cors(corsOptions));
 app.get("/test", (req, res) => {
   res.json("hello world");
 });
-
+app.get("/messages/:from/:to", async (req, res) => {
+  const { from, to } = req.params;
+  const messages = await MessageModel.find({
+    sender: { $in: [from, to] },
+    to: { $in: [from, to] },
+  }).sort({ createdAt: 1 });
+  res.json(messages);
+});
 app.get("/profile", (req, res) => {
   const token = req.cookies?.token;
   try {
@@ -137,7 +144,7 @@ wss.on("connection", (connection, req) => {
             JSON.stringify({
               text,
               sender: connection.userId,
-              id: messageDoc._id,
+              _id: messageDoc._id,
             })
           )
         );
