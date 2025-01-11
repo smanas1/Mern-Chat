@@ -9,14 +9,19 @@ const Chat = () => {
   const [selecetedUser, setSelectedUser] = useState(null);
   const [newMessageText, setNewMessageText] = useState("");
   const [onlinePeoples, setOnlinePeoples] = useState([]);
+  const [offlinePeoples, setOfflinePeoples] = useState({});
   const [messages, setMessages] = useState([]);
   const { username, id } = useContext(UserContext);
   const messageBoxRef = useRef(null);
   useEffect(() => {
+    wsConnect();
+  }, []);
+  const wsConnect = () => {
     const ws = new WebSocket("ws://localhost:8000");
     setWs(ws);
     ws.addEventListener("message", handleMessage);
-  }, []);
+    ws.addEventListener("close", () => wsConnect());
+  };
   const showOnlinePeople = (peopleArray) => {
     const people = {};
     peopleArray.forEach(({ userId, username }) => {
@@ -53,6 +58,20 @@ const Chat = () => {
     setNewMessageText("");
   };
   const messagesWithoutDup = uniqBy(messages, "_id");
+  useEffect(() => {
+    axios.get("/people").then((res) => {
+      const offlinePeoplesArr = res.data
+        .filter((p) => p._id !== id)
+        .filter((p) => !Object.keys(onlinePeoples).includes(p._id));
+      const offlinePeople = {};
+      offlinePeoplesArr.forEach((p) => {
+        offlinePeople[p._id] = p;
+      });
+      setOfflinePeoples(offlinePeople);
+      console.log(offlinePeople);
+    });
+  }, [onlinePeoples]);
+
   useEffect(() => {
     if (messageBoxRef.current) {
       messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
@@ -95,8 +114,27 @@ const Chat = () => {
             {selecetedUser === username && (
               <div className="h-14 -ml-5 rounded-r-md w-1 absolute bg-blue-500"></div>
             )}
-            <Avatar username={onlinePeoples[username]} />
+            <Avatar username={onlinePeoples[username]} online={true} />
             <span className="ml-2">{onlinePeoples[username]}</span>
+          </div>
+        ))}
+
+        {Object.keys(offlinePeoples).map((username, i) => (
+          <div
+            key={i}
+            className={`border-t flex  items-center last:border-b capitalize px-5 relative py-2 ${
+              selecetedUser === username ? "bg-blue-50 " : "hover:bg-blue-100"
+            }`}
+            onClick={() => setSelectedUser(username)}
+          >
+            {selecetedUser === username && (
+              <div className="h-14 -ml-5 rounded-r-md w-1 absolute bg-blue-500"></div>
+            )}
+            <Avatar
+              username={offlinePeoples[username].username}
+              online={false}
+            />
+            <span className="ml-2">{offlinePeoples[username].username}</span>
           </div>
         ))}
       </div>
@@ -131,7 +169,7 @@ const Chat = () => {
               >
                 <div
                   className={
-                    "p-2 m-1 break-words inline-block h-auto max-w-72" +
+                    "px-2 py-1 m-1 break-words inline-block h-auto max-w-72" +
                     (message.sender === id
                       ? " bg-blue-500  text-white rounded-md  "
                       : " bg-gray-200 text-gray-900  rounded-md ")

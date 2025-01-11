@@ -23,6 +23,12 @@ app.use(cors(corsOptions));
 app.get("/test", (req, res) => {
   res.json("hello world");
 });
+
+app.get("/people", async (req, res) => {
+  const people = await userModel.find({}, { _id: 1, username: 1 });
+  res.json(people);
+});
+
 app.get("/messages/:from/:to", async (req, res) => {
   const { from, to } = req.params;
   const messages = await MessageModel.find({
