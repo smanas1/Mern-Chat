@@ -30,23 +30,25 @@ app.get("/people", async (req, res) => {
 });
 
 app.get("/messages/:from/:to", async (req, res) => {
-  const { from, to } = req.params;
-  const messages = await MessageModel.find({
-    sender: { $in: [from, to] },
-    to: { $in: [from, to] },
-  }).sort({ createdAt: 1 });
-  res.json(messages);
+  try {
+    const { from, to } = req.params;
+    console.log(from, to);
+    const messages = await MessageModel.find({
+      sender: { $in: [from, to] },
+      to: { $in: [from, to] },
+    }).sort({ createdAt: 1 });
+    res.json(messages);
+  } catch (error) {
+    console.log(error.message);
+  }
 });
 app.get("/profile", (req, res) => {
   const token = req.cookies?.token;
-  try {
-    jwt.verify(token, process.env.JWT_SECRET, function (err, userData) {
-      if (err) throw err.message;
-      res.json(userData);
-    });
-  } catch (error) {
-    res.status(401).json("Cookie Not Found");
-  }
+  if (!token) return res.status(401).json("Cookie Not Founded");
+  jwt.verify(token, process.env.JWT_SECRET, function (err, userData) {
+    if (err) throw err.message;
+    res.json(userData);
+  });
 });
 
 app.post("/login", async (req, res) => {
@@ -71,6 +73,10 @@ app.post("/login", async (req, res) => {
   } catch (error) {
     console.log(error.message);
   }
+});
+
+app.post("/logout", (req, res) => {
+  res.cookie("token", "", { sameSite: "none", secure: true }).json("ok");
 });
 
 app.post("/register", async (req, res) => {
@@ -111,17 +117,7 @@ const server = app.listen(process.env.PORT);
 
 const wss = new ws.WebSocketServer({ server });
 
-wss.on("connection", (connection, req) => {
-  const cookie = req.headers.cookie;
-
-  const token = cookie.split("=")[1];
-
-  jwt.verify(token, process.env.JWT_SECRET, function (err, userData) {
-    const { userId, username } = userData;
-    connection.userId = userId;
-    connection.username = username;
-  });
-
+const notifyOnlinePeople = () => {
   [...wss.clients].forEach((client) => {
     client.send(
       JSON.stringify({
@@ -132,6 +128,37 @@ wss.on("connection", (connection, req) => {
       })
     );
   });
+};
+
+wss.on("connection", (connection, req) => {
+  connection.isAlive = true;
+
+  connection.timer = setInterval(() => {
+    connection.ping();
+    connection.deathTimer = setTimeout(() => {
+      connection.isAlive = false;
+      connection.terminate();
+      notifyOnlinePeople();
+    }, 1000);
+  }, 3000);
+
+  connection.on("pong", () => {
+    clearTimeout(connection.deathTimer);
+  });
+
+  const cookie = req.headers.cookie;
+
+  const token = cookie.split("=")[1];
+
+  if (cookie) {
+    jwt.verify(token, process.env.JWT_SECRET, function (err, userData) {
+      const { userId, username } = userData;
+      connection.userId = userId;
+      connection.username = username;
+    });
+  }
+
+  notifyOnlinePeople();
 
   connection.on("message", async (message) => {
     const messageData = JSON.parse(message.toString());

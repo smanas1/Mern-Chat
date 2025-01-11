@@ -1,7 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import Avatar from "./Avatar";
 import { UserContext } from "./UserContext";
-import ScrollToBottom from "react-scroll-to-bottom";
 import { uniqBy } from "lodash";
 import axios from "axios";
 const Chat = () => {
@@ -11,7 +10,7 @@ const Chat = () => {
   const [onlinePeoples, setOnlinePeoples] = useState([]);
   const [offlinePeoples, setOfflinePeoples] = useState({});
   const [messages, setMessages] = useState([]);
-  const { username, id } = useContext(UserContext);
+  const { username, id, setUsername, setId } = useContext(UserContext);
   const messageBoxRef = useRef(null);
   useEffect(() => {
     wsConnect();
@@ -22,13 +21,7 @@ const Chat = () => {
     ws.addEventListener("message", handleMessage);
     ws.addEventListener("close", () => wsConnect());
   };
-  const showOnlinePeople = (peopleArray) => {
-    const people = {};
-    peopleArray.forEach(({ userId, username }) => {
-      people[userId] = username;
-    });
-    setOnlinePeoples(people);
-  };
+
   function handleMessage(event) {
     const messageData = JSON.parse(event.data);
     if ("online" in messageData) {
@@ -37,9 +30,16 @@ const Chat = () => {
       setMessages((prev) => [...prev, { ...messageData }]);
     }
   }
-  const onlinePeopleExcelOurUser = { ...onlinePeoples };
-  delete onlinePeopleExcelOurUser[id];
-
+  const showOnlinePeople = (peopleArray) => {
+    const people = {};
+    peopleArray.forEach(({ userId, username }) => {
+      people[userId] = username;
+    });
+    setOnlinePeoples(people);
+  };
+  // const onlinePeopleExcelOurUser = { ...onlinePeoples };
+  // delete onlinePeopleExcelOurUser[id];
+  // const onlinePeopleExcelOurUser = uniqBy(onlinePeoples, "_id");
   const messageSubmit = (e) => {
     e.preventDefault();
     if (!newMessageText) return;
@@ -68,7 +68,6 @@ const Chat = () => {
         offlinePeople[p._id] = p;
       });
       setOfflinePeoples(offlinePeople);
-      console.log(offlinePeople);
     });
   }, [onlinePeoples]);
 
@@ -87,11 +86,18 @@ const Chat = () => {
     }
   }, [selecetedUser]);
 
+  const handleLogout = () => {
+    axios.post("/logout").then(() => {
+      setId(null);
+      setUsername(null);
+    });
+  };
+
   return (
     <div className="h-screen flex ">
-      <div className="w-72 bg-[#F7FBFC]">
+      <div className="w-72 overflow-auto  relative bg-[#F7FBFC]">
         {/* Logo */}
-        <div className="flex p-3 items-center ">
+        <div className="flex p-3  items-center ">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -103,21 +109,23 @@ const Chat = () => {
           </svg>
           <h1 className="text-xl font-semibold ml-2 text-blue-500">YOR SA</h1>
         </div>
-        {Object.keys(onlinePeopleExcelOurUser).map((username, i) => (
-          <div
-            key={i}
-            className={`border-t flex  items-center last:border-b capitalize px-5 relative py-2 ${
-              selecetedUser === username ? "bg-blue-50 " : "hover:bg-blue-100"
-            }`}
-            onClick={() => setSelectedUser(username)}
-          >
-            {selecetedUser === username && (
-              <div className="h-14 -ml-5 rounded-r-md w-1 absolute bg-blue-500"></div>
-            )}
-            <Avatar username={onlinePeoples[username]} online={true} />
-            <span className="ml-2">{onlinePeoples[username]}</span>
-          </div>
-        ))}
+        {Object.keys(onlinePeoples).map((username, i) =>
+          username === id ? null : (
+            <div
+              key={i}
+              className={`border-t flex  items-center last:border-b capitalize px-5 relative py-2 ${
+                selecetedUser === username ? "bg-blue-50 " : "hover:bg-blue-100"
+              }`}
+              onClick={() => setSelectedUser(username)}
+            >
+              {selecetedUser === username && (
+                <div className="h-14 -ml-5 rounded-r-md w-1 absolute bg-blue-500"></div>
+              )}
+              <Avatar username={onlinePeoples[username]} online={true} />
+              <span className="ml-2">{onlinePeoples[username]}</span>
+            </div>
+          )
+        )}
 
         {Object.keys(offlinePeoples).map((username, i) => (
           <div
@@ -137,6 +145,26 @@ const Chat = () => {
             <span className="ml-2">{offlinePeoples[username].username}</span>
           </div>
         ))}
+        <div
+          onClick={() => handleLogout()}
+          className="bottom-0 absolute cursor-pointer w-full h-12 text-blue-700 bg-slate-200 flex  items-center justify-center"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+            className="size-6"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M8.25 9V5.25A2.25 2.25 0 0 1 10.5 3h6a2.25 2.25 0 0 1 2.25 2.25v13.5A2.25 2.25 0 0 1 16.5 21h-6a2.25 2.25 0 0 1-2.25-2.25V15m-3 0-3-3m0 0 3-3m-3 3H15"
+            />
+          </svg>
+          <p>Logout</p>
+        </div>
       </div>
       <div className="flex flex-col w-full bg-blue-50 p-3">
         <div ref={messageBoxRef} className="flex-1 scroll-smooth overflow-auto">
