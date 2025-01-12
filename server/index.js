@@ -14,7 +14,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 const corsOptions = {
-  origin: process.env.CLIENT_URL, // Replace with your frontend URL
+  origin: "https://yorsa.vercel.app/", // Replace with your frontend URL
   credentials: true, // Allow credentials
 };
 
