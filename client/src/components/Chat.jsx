@@ -19,14 +19,16 @@ const Chat = () => {
   useEffect(() => {
     if (selecetedUser) {
       axios
-        .get(`https://yorsaback.vercel.app/messages/${selecetedUser}/${id}`)
+        .get(
+          `https://mern-chat-l2fq.onrender.com/messages/${selecetedUser}/${id}`
+        )
         .then((res) => {
           setMessages(res.data);
         });
     }
   }, [selecetedUser]);
   const wsConnect = () => {
-    const ws = new WebSocket("ws://yorsaback.vercel.app");
+    const ws = new WebSocket("ws://mern-chat-l2fq.onrender.com");
     setWs(ws);
     ws.addEventListener("message", handleMessage);
     ws.addEventListener("close", () => wsConnect());
