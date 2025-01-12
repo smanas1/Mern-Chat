@@ -14,22 +14,24 @@ const Chat = () => {
   const messageBoxRef = useRef(null);
   useEffect(() => {
     wsConnect();
-  }, []);
+  }, [selecetedUser]);
+
+  useEffect(() => {
+    if (selecetedUser) {
+      axios
+        .get(`https://yorsaback.vercel.app/messages/${selecetedUser}/${id}`)
+        .then((res) => {
+          setMessages(res.data);
+        });
+    }
+  }, [selecetedUser]);
   const wsConnect = () => {
-    const ws = new WebSocket("ws://localhost:8000");
+    const ws = new WebSocket("ws://yorsaback.vercel.app");
     setWs(ws);
     ws.addEventListener("message", handleMessage);
     ws.addEventListener("close", () => wsConnect());
   };
 
-  function handleMessage(event) {
-    const messageData = JSON.parse(event.data);
-    if ("online" in messageData) {
-      showOnlinePeople(messageData.online);
-    } else if ("text" in messageData) {
-      setMessages((prev) => [...prev, { ...messageData }]);
-    }
-  }
   const showOnlinePeople = (peopleArray) => {
     const people = {};
     peopleArray.forEach(({ userId, username }) => {
@@ -37,6 +39,7 @@ const Chat = () => {
     });
     setOnlinePeoples(people);
   };
+
   // const onlinePeopleExcelOurUser = { ...onlinePeoples };
   // delete onlinePeopleExcelOurUser[id];
   // const onlinePeopleExcelOurUser = uniqBy(onlinePeoples, "_id");
@@ -76,15 +79,18 @@ const Chat = () => {
       messageBoxRef.current.scrollTop = messageBoxRef.current.scrollHeight;
     }
   }, [messages]);
-  useEffect(() => {
-    if (selecetedUser) {
-      axios
-        .get(`http://localhost:8000/messages/${selecetedUser}/${id}`)
-        .then((res) => {
-          setMessages(res.data);
-        });
+
+  function handleMessage(event) {
+    const messageData = JSON.parse(event.data);
+
+    if ("online" in messageData) {
+      showOnlinePeople(messageData.online);
+    } else if ("text" in messageData) {
+      messageData.sender === selecetedUser
+        ? setMessages((prev) => [...prev, { ...messageData }])
+        : null;
     }
-  }, [selecetedUser]);
+  }
 
   const handleLogout = () => {
     axios.post("/logout").then(() => {
@@ -142,6 +148,7 @@ const Chat = () => {
               username={offlinePeoples[username].username}
               online={false}
             />
+
             <span className="ml-2">{offlinePeoples[username].username}</span>
           </div>
         ))}

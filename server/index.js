@@ -32,7 +32,6 @@ app.get("/people", async (req, res) => {
 app.get("/messages/:from/:to", async (req, res) => {
   try {
     const { from, to } = req.params;
-    console.log(from, to);
     const messages = await MessageModel.find({
       sender: { $in: [from, to] },
       to: { $in: [from, to] },
@@ -67,7 +66,7 @@ app.post("/login", async (req, res) => {
         res
           .cookie("token", token, { sameSite: "none", secure: true })
           .status(201)
-          .json("Login Successful");
+          .json({ _id: user._id });
       }
     );
   } catch (error) {
@@ -137,6 +136,7 @@ wss.on("connection", (connection, req) => {
     connection.ping();
     connection.deathTimer = setTimeout(() => {
       connection.isAlive = false;
+      clearInterval(connection.timer);
       connection.terminate();
       notifyOnlinePeople();
     }, 1000);
